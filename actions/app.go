@@ -68,9 +68,10 @@ func App() *buffalo.App {
 
 		// Routes declaration
 		app.GET("/", HomeHandler)
-		app.GET("/facts", FactsIndex)
-		app.GET("/facts/{id}", FactHandler)
-		app.POST("/facts", authMiddleware(FactsCreate))
+		app.GET("/facts", FactList)
+		app.GET("/facts/{id}", FactShow)
+		app.DELETE("/facts/{id}", authMiddleware(FactDestroy))
+		app.POST("/facts", authMiddleware(FactCreate))
 	}
 
 	return app

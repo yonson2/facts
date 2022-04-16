@@ -6,12 +6,13 @@ import (
 
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/pop/v6"
+	"github.com/gofrs/uuid"
 
 	"github.com/pkg/errors"
 )
 
 //FactsIndex displays all facts
-func FactsIndex(c buffalo.Context) error {
+func FactList(c buffalo.Context) error {
 	//TODO: pagination
 	// // Paginate results. Params "page" and "per_page" control pagination.
 	// // Default values are "page=1" and "per_page=20".
@@ -28,7 +29,7 @@ func FactsIndex(c buffalo.Context) error {
 
 // FactsCreate creates a new fact from a POST request
 // mapped to /facts.
-func FactsCreate(c buffalo.Context) error {
+func FactCreate(c buffalo.Context) error {
 	fact := &models.Fact{}
 	if err := c.Bind(fact); err != nil {
 		return errors.WithStack(err)
@@ -47,7 +48,7 @@ func FactsCreate(c buffalo.Context) error {
 	return c.Render(http.StatusOK, r.JSON(map[string]string{"message": "Fact created!", "id": fact.ID.String()}))
 }
 
-func FactHandler(c buffalo.Context) error {
+func FactShow(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 
 	id := c.Param("id")
@@ -59,4 +60,22 @@ func FactHandler(c buffalo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, r.JSON(fact))
+}
+
+func FactDestroy(c buffalo.Context) error {
+	tx := c.Value("tx").(*pop.Connection)
+
+	id, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	fact := models.Fact{ID: id}
+
+	err = tx.Destroy(&fact)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return c.Render(http.StatusOK, r.JSON(map[string]string{"message": "Fact destroyed!"}))
 }
