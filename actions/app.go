@@ -1,8 +1,11 @@
 package actions
 
 import (
+	"errors"
 	"facts/locales"
 	"facts/models"
+	"os"
+	"strings"
 
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo-pop/v3/pop/popmw"
@@ -62,7 +65,12 @@ func App() *buffalo.App {
 		//   c.Value("tx").(*pop.Connection)
 		// Remove to disable this.
 		app.Use(popmw.Transaction(models.DB))
+
+		// Routes declaration
 		app.GET("/", HomeHandler)
+		app.GET("/facts", FactsIndex)
+		app.GET("/facts/{id}", FactHandler)
+		app.POST("/facts", authMiddleware(FactsCreate))
 	}
 
 	return app
@@ -90,4 +98,20 @@ func forceSSL() buffalo.MiddlewareFunc {
 		SSLRedirect:     ENV == "production",
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
 	})
+}
+
+// authMiddleware is a simple middleware that checks for a token in the header
+// of the request, can be viewed as a simpler form of jwt
+func authMiddleware(next buffalo.Handler) buffalo.Handler {
+	secret := os.Getenv("APP_SECRET")
+
+	return func(c buffalo.Context) error {
+		token := c.Request().Header.Get("Authorization")
+		_, token, found := strings.Cut(token, "Bearer ")
+
+		if !found || token != secret {
+			return errors.New("Invalid token")
+		}
+		return next(c)
+	}
 }
